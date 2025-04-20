@@ -27,9 +27,9 @@ export async function GET(req: Request) {
 }
 
 // อัพเดทข้อมูลคนงาน
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+export async function PUT( req: NextRequest, { params }: { params: { id: string } } ) {
   try {
-    const { id } = context.params;
+    const id = params.id;
     const formData = await req.formData();
 
     const data = {
