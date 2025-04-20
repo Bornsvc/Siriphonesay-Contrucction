@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { pool } from '@/backend/config/database';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
@@ -27,8 +27,9 @@ export async function GET(req: Request) {
 }
 
 // อัพเดทข้อมูลคนงาน
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
   try {
+    const { id } = context.params;
     const formData = await req.formData();
 
     const data = {
@@ -54,7 +55,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       const buffer = Buffer.from(bytes);
     
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true }); // สร้างโฟลเดอร์ถ้ายังไม่มี
+      await mkdir(uploadDir, { recursive: true });
     
       const filename = `worker_${Date.now()}_${imageFile.name}`;
       const filePath = path.join(uploadDir, filename);
@@ -62,7 +63,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     
       data.image_url = `/uploads/${filename}`;
     }
-    
 
     const values = [
       data.first_name,
@@ -72,14 +72,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data.age,
       data.address || null,
       data.phone_number,
-      'General Worker', // ถ้าอยากใช้ purpose ก็เพิ่มตรง formData ด้วย
+      'General Worker',
       data.gender,
       data.position,
       data.team_count || 0,
       data.participation_count || 0,
       data.rating || 1,
       data.image_url,
-      params.id
+      id
     ];
 
     const result = await pool.query(
@@ -104,7 +104,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการอัพเดทข้อมูลคนงาน' }, { status: 500 });
   }
 }
-
 
 // ลบข้อมูลคนงาน
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
