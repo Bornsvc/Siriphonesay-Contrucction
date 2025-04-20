@@ -317,12 +317,12 @@ export default function Home() {
                               {`${worker.first_name} ${worker.last_name} (${worker.middle_name || null})`}
                             </Link>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{formatDate(worker.created_at)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 capitalize">{worker.gender}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.participation_count}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.team_count}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.position}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.phone_number}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{formatDate(worker.created_at || '-')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 capitalize">{worker.gender || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.participation_count || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.team_count || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.position || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.phone_number || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">
                             { worker.rating === 5 ? '⭐⭐⭐⭐⭐' : 
                               worker.rating === 4 ? '⭐⭐⭐⭐' :

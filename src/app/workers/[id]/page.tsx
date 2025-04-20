@@ -299,7 +299,7 @@ export default function WorkerDetails() { // Capitalize component name
                     <p className="text-lg font-medium text-gray-800">{workers.position || 'ບໍ່ມີຂໍ້ມູນ'}</p>
                   </div>
                   <div>
-                    <p className="text-base text-amber-600">ຈຳນວນທີມ</p>
+                    <p className="text-base text-amber-600">ຈຳນວນທີມງານ</p>
                     <p className="text-lg font-medium text-gray-800">{workers.team_count || 0}</p>
                   </div>
                 </div>
