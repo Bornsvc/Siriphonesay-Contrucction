@@ -7,20 +7,48 @@ import path from 'path';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = 10; // 10 workers per page
+    const page = parseInt(searchParams.get('page') || '1'); // หน้าเริ่มต้น
+    const limit = 10;
     const offset = (page - 1) * limit;
 
-    // Get total count for pagination
-    const countResult = await pool.query('SELECT COUNT(*) FROM workers');
+    const search = searchParams.get('search')?.trim() || ''; // คำที่ใช้ค้นหา
+    const searchQuery = `%${search}%`;
+
+    // สร้าง query สำหรับนับจำนวนรวมของข้อมูล (ใช้ search ด้วยถ้ามี)
+    let countQuery = 'SELECT COUNT(*) FROM workers';
+    let dataQuery = 'SELECT * FROM workers';
+    const values = [];
+
+    if (search) {
+      countQuery += `
+        WHERE position ILIKE $1
+        OR first_name ILIKE $1
+        OR last_name ILIKE $1
+        OR CAST(phone_number AS TEXT) ILIKE $1
+        OR CAST(participation_count AS TEXT) ILIKE $1`;
+    
+      dataQuery += `
+        WHERE position ILIKE $1
+        OR first_name ILIKE $1
+        OR last_name ILIKE $1
+        OR CAST(phone_number AS TEXT) ILIKE $1
+        OR CAST(participation_count AS TEXT) ILIKE $1`;
+    
+      values.push(searchQuery);
+    }
+    
+
+    // เพิ่ม ORDER BY และ pagination (LIMIT + OFFSET)
+    dataQuery += ` ORDER BY created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+    values.push(limit, offset);
+
+    // ดึงข้อมูล count (จำนวนทั้งหมด)
+    const countResult = await pool.query(countQuery, search ? [searchQuery] : []);
     const totalWorkers = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalWorkers / limit);
 
-    // Get paginated workers
-    const result = await pool.query(
-      'SELECT * FROM workers ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
-    );
+    // ดึงข้อมูล workers ตามหน้าและคำค้นหา
+    const result = await pool.query(dataQuery, values);
 
     return NextResponse.json({
       workers: result.rows,

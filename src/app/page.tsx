@@ -314,7 +314,7 @@ export default function Home() {
                           <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{worker.id}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-amber-600 hover:text-amber-800">
                             <Link href={`/workers/${worker.id}`}>
-                              {`${worker.first_name} ${worker.last_name} (${worker.middle_name || null})`}
+                              {`${worker.first_name} ${worker.last_name} (${worker.middle_name || '-'})`}
                             </Link>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900">{formatDate(worker.created_at || '-')}</td>
