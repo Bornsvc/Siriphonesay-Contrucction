@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
@@ -27,9 +27,9 @@ export async function GET(req: Request) {
 }
 
 // อัพเดทข้อมูลคนงาน
-export async function PUT( req: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: Request) {
   try {
-    const { id } = context.params;
+    const id = new URL(req.url).pathname.split('/').pop();
     const formData = await req.formData();
 
     const data = {
