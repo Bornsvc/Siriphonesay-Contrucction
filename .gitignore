@@ -41,6 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 # Environment variables
+keepimg-c2a7b-firebase-adminsdk-fbsvc-0edb806d8f.json
 .env
 .env.local
 DS_Store" > .gitignore

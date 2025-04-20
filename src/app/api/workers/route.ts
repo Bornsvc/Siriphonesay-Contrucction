@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
-import { writeFile } from 'fs/promises';
-import { mkdir } from 'fs/promises';
-import path from 'path';
+import { v4 as uuidv4 } from 'uuid'; // npm install uuid
+import { bucket } from '@/lib/firebaseAdmin';
 
 // ดึงข้อมูลคนงานทั้งหมด
 export async function GET(req: Request) {
@@ -98,13 +97,22 @@ export async function POST(req: Request) {
     
       const cleanFileName = imageFile.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
       const filename = `worker_${Date.now()}_${cleanFileName}`;
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      const filePath = path.join(uploadDir, filename);
+      const file = bucket.file(`workers/${filename}`);
     
-      await mkdir(uploadDir, { recursive: true }); // สร้างโฟลเดอร์ถ้ายังไม่มี
-      await writeFile(filePath, buffer);
+      await file.save(buffer, {
+        metadata: {
+          contentType: imageFile.type,
+          metadata: {
+            firebaseStorageDownloadTokens: uuidv4(), // เพื่อให้สามารถเข้าถึงได้จากลิงก์
+          },
+        },
+        public: true,
+      });
     
-      image_url = `/uploads/${filename}`;
+      // โหลด URL จาก Firebase
+      image_url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
+        file.name
+      )}?alt=media`;
     }
     
 
