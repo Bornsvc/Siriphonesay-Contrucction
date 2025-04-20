@@ -106,11 +106,16 @@ export async function PUT(req: Request) {
 }
 
 // ลบข้อมูลคนงาน
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request) {
   try {
+    const id = new URL(req.url).pathname.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'Patient ID is required' }, { status: 400 });
+    }
+
     const result = await pool.query(
       'DELETE FROM workers WHERE id = $1 RETURNING *',
-      [params.id]
+      [id]
     );
 
     if (result.rows.length === 0) {
