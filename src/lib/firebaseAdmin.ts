@@ -9,7 +9,7 @@ if (!admin.apps.length) {
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'KeepIMAGE.appspot.com',
+    storageBucket: 'keep-img-from-siriphonesay.appspot.com',
   });
 }
 
