@@ -9,7 +9,7 @@ if (!admin.apps.length) {
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'KeepIMG.appspot.com',
+    storageBucket: 'KeepIMAGE.appspot.com',
   });
 }
 
