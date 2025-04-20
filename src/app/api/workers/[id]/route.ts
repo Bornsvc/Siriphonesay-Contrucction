@@ -5,10 +5,10 @@ import path from 'path';
 
 
 // ดึงข้อมูลคนงานตาม ID
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
-  try {
-    const { id } = context.params;
+export async function GET(req: NextRequest,{ params }: { params: { id: string } }) {
+  const id = params.id;
 
+  try {
     const result = await pool.query(
       'SELECT * FROM workers WHERE id = $1',
       [id]
