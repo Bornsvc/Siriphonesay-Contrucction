@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
 import { writeFile } from 'fs/promises';
+import { mkdir } from 'fs/promises';
 import path from 'path';
 
 // ดึงข้อมูลคนงานทั้งหมด
@@ -94,16 +95,18 @@ export async function POST(req: Request) {
     if (imageFile) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
-      // Create unique filename
-      const filename = `worker_${Date.now()}_${imageFile.name}`;
+    
+      const cleanFileName = imageFile.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
+      const filename = `worker_${Date.now()}_${cleanFileName}`;
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
       const filePath = path.join(uploadDir, filename);
-      
-      // Save file
+    
+      await mkdir(uploadDir, { recursive: true }); // สร้างโฟลเดอร์ถ้ายังไม่มี
       await writeFile(filePath, buffer);
+    
       image_url = `/uploads/${filename}`;
     }
+    
 
     const values = [
       newId,  // Use generated ID instead of form data
