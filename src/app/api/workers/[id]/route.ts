@@ -5,10 +5,9 @@ import path from 'path';
 
 
 // ดึงข้อมูลคนงานตาม ID
-export async function GET(req: Request) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const url = new URL(req.url);
-    const id = url.pathname.split('/').pop(); 
+    const { id } = context.params;
 
     const result = await pool.query(
       'SELECT * FROM workers WHERE id = $1',
@@ -18,7 +17,7 @@ export async function GET(req: Request) {
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'ไม่พบข้อมูลคนงาน' }, { status: 404 });
     }
-    console.log('👀 worker data from DB:', result.rows[0]);
+
     return NextResponse.json(result.rows[0], { status: 200 });
   } catch (error) {
     console.error('Error fetching worker:', error);
@@ -26,13 +25,11 @@ export async function GET(req: Request) {
   }
 }
 
+
 // อัพเดทข้อมูลคนงาน
-export async function PUT(
-    req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT( req: NextRequest, context: { params: { id: string } }) {
   try {
-    const id = params.id;
+    const { id } = context.params;
     const formData = await req.formData();
 
     const data = {
@@ -109,11 +106,13 @@ export async function PUT(
 }
 
 // ลบข้อมูลคนงาน
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
   try {
+    const { id } = context.params;
+
     const result = await pool.query(
       'DELETE FROM workers WHERE id = $1 RETURNING *',
-      [params.id]
+      [id]
     );
 
     if (result.rows.length === 0) {
