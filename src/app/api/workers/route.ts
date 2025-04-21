@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
-import { supabase } from '@/lib/supabase';
+import { uploadImage } from '@/lib/supabase';
 
 // ดึงข้อมูลคนงานทั้งหมด
 export async function GET(req: Request) {
@@ -83,27 +83,7 @@ export async function POST(req: Request) {
     let image_url = null;
 
     if (imageFile) {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const cleanFileName = imageFile.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
-      const filename = `worker_${Date.now()}_${cleanFileName}`;
-
-      const { data: uploaded, error: uploadError } = await supabase
-        .storage
-        .from('workers') // 👈 ต้องมี bucket ชื่อว่า 'workers' ใน Supabase Storage
-        .upload(filename, buffer, {
-          contentType: imageFile.type,
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('workers')
-        .getPublicUrl(uploaded.path);
-
-      image_url = urlData.publicUrl;
+      image_url = await uploadImage(imageFile);
     }
 
     const values = [

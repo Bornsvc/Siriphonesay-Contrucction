@@ -18,7 +18,10 @@ const nextConfig = {
     PORT: "3001",
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3001",
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "your-secret-key"
-  }
+  },
+  images: {
+    domains: ['kilgwwsotufhuleldynf.supabase.co'],
+  },
 };
 
 module.exports = nextConfig;

@@ -119,7 +119,6 @@ const CustomerForm: React.FC = () => {
     }
   };
  
-
   const handleClose = () => {
     setComfirm(true);
   }

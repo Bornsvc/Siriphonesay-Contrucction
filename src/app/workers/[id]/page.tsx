@@ -245,7 +245,7 @@ export default function WorkerDetails() { // Capitalize component name
                 {workers.image_url ? (
                   <div className="relative h-[300px] w-full">
                     <Image 
-                      src={workers.image_url ? `/uploads/${workers.image_url.split('/').pop()}` : '/worker-placeholder.png'}
+                      src={workers.image_url || '/worker-placeholder.png'}
                       alt='Worker Photo'
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
