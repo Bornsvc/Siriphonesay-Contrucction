@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { uploadImage } from '@/lib/supabase';
 
 
 // ดึงข้อมูลคนงานตาม ID
@@ -50,18 +49,8 @@ export async function PUT(req: Request) {
 
     const imageFile = formData.get('image') as File | null;
 
-    if (imageFile && typeof imageFile === 'object') {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-    
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true });
-    
-      const filename = `worker_${Date.now()}_${imageFile.name}`;
-      const filePath = path.join(uploadDir, filename);
-      await writeFile(filePath, buffer);
-    
-      data.image_url = `/uploads/${filename}`;
+    if (imageFile) {
+      data.image_url = await uploadImage(imageFile);
     }
 
     const values = [
