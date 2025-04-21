@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
 
 const supabase = createClient(
   process.env.SUPABASEURL!,
@@ -17,6 +16,7 @@ export async function uploadImage(file: File) {
       upsert: false,
       contentType: file.type,
     });
+    console.log(data)
 
   if (error) throw error;
 
