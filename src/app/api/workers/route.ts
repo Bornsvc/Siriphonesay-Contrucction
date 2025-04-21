@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
-import { v4 as uuidv4 } from 'uuid'; // npm install uuid
-import { bucket } from '@/lib/firebaseAdmin';
+import { supabase } from '@/lib/supabase';
 
 // ดึงข้อมูลคนงานทั้งหมด
 export async function GET(req: Request) {
@@ -69,18 +68,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const data = await req.formData();
-    
-    // Improved ID generation query with NULLIF and COALESCE
+
     const idResult = await pool.query(`
       SELECT COALESCE(
-        MAX(
-          CAST(
-            NULLIF(
-              REGEXP_REPLACE(id, '\\D', '', 'g'),
-              ''
-            ) AS INTEGER
-          )
-        ),
+        MAX(CAST(NULLIF(REGEXP_REPLACE(id, '\\D', '', 'g'), '') AS INTEGER)),
         0
       ) as max_id 
       FROM workers
@@ -94,30 +85,29 @@ export async function POST(req: Request) {
     if (imageFile) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-    
+
       const cleanFileName = imageFile.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
       const filename = `worker_${Date.now()}_${cleanFileName}`;
-      const file = bucket.file(`workers/${filename}`);
-    
-      await file.save(buffer, {
-        metadata: {
+
+      const { data: uploaded, error: uploadError } = await supabase
+        .storage
+        .from('workers') // 👈 ต้องมี bucket ชื่อว่า 'workers' ใน Supabase Storage
+        .upload(filename, buffer, {
           contentType: imageFile.type,
-          metadata: {
-            firebaseStorageDownloadTokens: uuidv4(), // เพื่อให้สามารถเข้าถึงได้จากลิงก์
-          },
-        },
-        public: true,
-      });
-    
-      // โหลด URL จาก Firebase
-      image_url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
-        file.name
-      )}?alt=media`;
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('workers')
+        .getPublicUrl(uploaded.path);
+
+      image_url = urlData.publicUrl;
     }
-    
 
     const values = [
-      newId,  // Use generated ID instead of form data
+      newId,
       data.get('first_name'),
       data.get('middle_name'),
       data.get('last_name'),
@@ -131,7 +121,7 @@ export async function POST(req: Request) {
       data.get('team_count') || 0,
       data.get('participation_count') || 0,
       data.get('rating') || 5,
-      image_url  // Use the saved image URL
+      image_url,
     ];
 
     const result = await pool.query(
@@ -145,6 +135,7 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json(result.rows[0], { status: 201 });
+
   } catch (error) {
     console.error('Error creating worker:', error);
     return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการเพิ่มข้อมูลคนงาน' }, { status: 500 });
