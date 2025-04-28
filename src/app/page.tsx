@@ -1,15 +1,19 @@
 "use client"
+//Hook
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import PatientForm from './components/patientForm'
 import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
+
+//component
+import PatientForm from './components/patientForm'
 import ImportFile from './components/importPatientForm'
 import Pagination from './components/Pagination';
 import SidebarItem from './components/SidebarItem';
 
+//Icon and Image
 import LOGO from '@/icons/ChatGPT Image Apr 20, 2025, 12_12_55 PM.png'
 import Image from 'next/image';
 import PtientIcon from '@/icons/patient.png'
@@ -240,8 +244,7 @@ export default function Home() {
                     isActive={activeItem === "ສະຖານະ"}
                   />
                    {/* ถ้า isDropdownOpen เป็น true ให้โชว์ dropdown */}
-                   <div
-                    className={`flex flex-col space-y-2 py-1 overflow-hidden transition-all duration-500 ease-in-out
+                   <div className={`flex flex-col space-y-2 py-1 overflow-hidden transition-all duration-500 ease-in-out
                       ${isDropdownOpen 
                         ? 'max-h-[1000px] transform translate-y-0 bg-yellow-50' 
                         : 'max-h-0 transform -translate-y-2'

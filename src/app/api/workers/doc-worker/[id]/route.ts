@@ -1,144 +1,108 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { uploadDocWorkerImage } from '@/lib/supabase';
-
-const supabase = createClient(
-  process.env.SUPABASEURL!,
-  process.env.SUPABASEANONKEY!
-);
+// import { uploadDocWorkerImage } from '@/lib/supabase';
+import { v2 as cloudinary } from 'cloudinary';
 
 
-export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const id = url.pathname.split('/').pop();
-
-    if (!id) {
-      return NextResponse.json({ error: 'Missing worker ID' }, { status: 400 });
-    }
-
-    // สร้างชนิดของ documents
-    type DocumentsMap = {
-      idCard: string[];
-      passport: string[];
-      familyBook: string[];
-      other: string[];
-    };
+type CloudinaryResource = {
+  secure_url: string;
+};
 
 
-   // ดึงข้อมูลจาก Supabase
-    const { data, error } = await supabase
-    .from('worker_documents')
-    .select('*')
-    .eq('worker_id', id); // ค้นหาตาม worker_id
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
 
-    if (error) {
-    console.error('Error fetching data:', error);
-    return NextResponse.json({ error: 'Error fetching documents' }, { status: 500 });
-    }
-
-    // เตรียมเอกสารเป็นประเภทที่เราอยากให้
-    const documents: DocumentsMap = {
-    idCard: [],
-    passport: [],
-    familyBook: [],
-    other: []
-    };
-
-    // ตรวจสอบว่าข้อมูลมีหรือไม่
-    if (data && Array.isArray(data)) {
-    data.forEach((doc) => {
-      // เพิ่มการตรวจสอบว่า doc.type เป็น key ของ DocumentsMap หรือไม่
-      if (doc.type in documents) {
-        // ใช้ type assertion เพื่อบอก TypeScript ว่า doc.type เป็น keyof DocumentsMap
-        documents[doc.type as keyof DocumentsMap].push(doc.image_url);
-      }
-    });
-    }
-
-    // ส่งกลับข้อมูล
-    return NextResponse.json(documents);
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-        return NextResponse.json({ error: 'Error fetching documents' }, { status: 500 });
-      }
-    }
-
-    export async function POST(req: NextRequest) {
-      try {
-        const url = new URL(req.url);
-        const workerId = url.pathname.split('/').pop(); // รับ ID จาก URL
-        console.log("workerId>>>", workerId)
-        
-        const formData = await req.formData();
-        const files = formData.getAll('files') as File[];
-    
-        if (!workerId || !files.length) {
-          return NextResponse.json({ error: "Worker ID or files are missing" }, { status: 400 });
-        }
-    
-        // อัปโหลดไฟล์ไปยัง Supabase และเก็บ URL
-        const uploadPromises = files.map(async (file) => {
-          try {
-            const imageUrl = await uploadDocWorkerImage(file);
-            
-            // เก็บข้อมูลในฐานข้อมูล (เช่น worker_documents table)
-            const { error } = await supabase
-              .from('worker_documents')
-              .insert({
-                worker_id: workerId,
-                image_url: imageUrl,
-                created_at: new Date().toISOString()
-              });
-    
-            if (error) throw error;
-            return imageUrl;
-          } catch (error) {
-            console.error('Error processing file:', error);
-            return null;
+  
+  export async function POST(
+    req: NextRequest, 
+    { params }: { params: { id: string } }
+  ) {
+    const id = params.id;  // ← ตรงนี้ปกติเลย ไม่ต้อง await
+    const formData = await req.formData();
+    const files = formData.getAll('files') as File[];
+  
+    const uploadedUrls: string[] = [];
+  
+    for (const file of files) {
+      if (!(file instanceof File)) continue;
+      const buffer = Buffer.from(await file.arrayBuffer());
+  
+      const uploadResult = await new Promise<CloudinaryResource>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: `workers/${id}` },
+          (err, result) => {
+            if (err) reject(err);
+            else if (result) resolve(result);
+            else reject(new Error('No result'));
           }
-        });
-    
-        // รอให้ไฟล์ทั้งหมดอัปโหลดเสร็จ
-        const uploadedUrls = (await Promise.all(uploadPromises)).filter(url => url !== null);
-    
-        // ส่งข้อมูลที่อัปโหลดกลับไปยัง Frontend
-        return NextResponse.json({ message: 'Files uploaded successfully', urls: uploadedUrls });
-      } catch (error) {
-        console.error('Error uploading documents:', error);
-        return NextResponse.json({ error: 'Error uploading documents' }, { status: 500 });
-      }
+        );
+        stream.end(buffer);
+      });
+  
+      uploadedUrls.push(uploadResult.secure_url);
     }
-
-export async function DELETE(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const workerId = url.pathname.split('/').pop();
-    const { type, imageUrl } = await req.json();
-
-    // Get the filename from the URL
-    const filename = imageUrl.split('/').pop()?.split('?')[0];
-
-    // Delete from Supabase storage
-    const { error: storageError } = await supabase.storage
-      .from('doc-worker')
-      .remove([filename]);
-
-    if (storageError) throw storageError;
-
-    // Delete from Supabase database
-    const { error: dbError } = await supabase
-      .from('worker_documents')
-      .delete()
-      .eq('worker_id', workerId)
-      .eq('type', type)
-      .eq('image_url', imageUrl);
-
-    if (dbError) throw dbError;
-
-    return NextResponse.json({ message: 'Document deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting document:', error);
-    return NextResponse.json({ error: 'Error deleting document' }, { status: 500 });
+  
+    return NextResponse.json({ urls: uploadedUrls });
   }
-}
+  
+
+  export async function GET(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+  ) {
+    const { id } = params;
+  
+    try {
+      // กำหนด type ให้ searchResult ชัดเจน
+      const result = await cloudinary.search
+        .expression(`folder:workers/${id}`)
+        .sort_by('created_at', 'desc')
+        .max_results(100)
+        .execute();
+  
+        // console.log("result>>>>>>>",result);
+      // resources.map ก็จะรู้ว่า r.secure_url มีจริง
+      const urls = result.resources.map((r: CloudinaryResource) => r.secure_url);
+       // สมมุติ: เราแบ่ง array เป็น 3 column
+      const chunkSize = Math.ceil(urls.length / 3);
+      const column1 = urls.slice(0, chunkSize);
+      const column2 = urls.slice(chunkSize, chunkSize * 2);
+      const column3 = urls.slice(chunkSize * 2);
+
+      return NextResponse.json({ column1, column2, column3 });
+
+    } catch (error) {
+      console.error('Fetch Cloudinary images error:', error);
+      return NextResponse.json({ error: 'Failed to fetch images' }, { status: 500 });
+    }
+  }
+  
+  export async function DELETE(
+    req: NextRequest,
+    { params }: { params: { id: string, publicId: string } } // You can pass the public ID to delete
+  ) {
+    const { id, publicId } = params;
+  
+    try {
+      // Make sure the publicId is valid
+      if (!publicId) {
+        return NextResponse.json({ error: 'Public ID is required for deletion' }, { status: 400 });
+      }
+  
+      // Call Cloudinary's destroy API
+      const result = await cloudinary.uploader.destroy(publicId, {
+        folder: `workers/${id}`,
+      });
+  
+      if (result.result === 'ok') {
+        return NextResponse.json({ message: 'Image deleted successfully' });
+      } else {
+        return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
+    }
+  }

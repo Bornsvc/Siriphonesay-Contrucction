@@ -6,6 +6,9 @@ const supabase = createClient(
 );
 
 export async function uploadImage(file: File) {
+  if (!file) {
+    throw new Error("File is undefined or invalid");
+  }
   const cleanFileName = file.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
   const filename = `worker_${Date.now()}_${cleanFileName}`;
 

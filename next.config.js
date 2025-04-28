@@ -20,7 +20,7 @@ const nextConfig = {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "your-secret-key"
   },
   images: {
-    domains: ['kilgwwsotufhuleldynf.supabase.co'],
+    domains: ['kilgwwsotufhuleldynf.supabase.co','res.cloudinary.com'],
   },
 };
 

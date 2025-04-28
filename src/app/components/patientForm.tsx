@@ -86,7 +86,7 @@ const CustomerForm: React.FC = () => {
         ...prevData,
         [name]: value
       }));
-      console.log("formData?>>>>>", formData)
+      // console.log("formData?>>>>>", formData)
     }
   };
 
