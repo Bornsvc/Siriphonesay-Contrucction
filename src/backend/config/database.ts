@@ -7,28 +7,21 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const globalForPg = global as unknown as { pgPool: Pool };
 
 // ปรับปรุงการตั้งค่า Pool configuration
-export const pool = 
-globalForPg.pgPool ||
-new Pool({
-  user: process.env.POSTGRESUSER,
-  host: process.env.POSTGRESHOST,
-  database: process.env.POSTGRESDB,
-  password: process.env.POSTGRESPASSWORD,
-  port: parseInt(process.env.POSTGRESPORT || '5432'),
+export const pool = globalForPg.pgPool || new Pool({
   connectionString: process.env.POSTGRESURL,
-  ssl: process.env.NODE_ENV === 'production' 
-    ? { rejectUnauthorized: true }
-    : { rejectUnauthorized: false },
+  ssl: process.env.NODEENV === 'production' 
+    ? { rejectUnauthorized: false } 
+    : false,
   
-  // เพิ่มและปรับแต่งค่า timeout และ connection limits
-  connectionTimeoutMillis: 10000,    // เพิ่มเวลารอการเชื่อมต่อเป็น 10 วินาที
-  idleTimeoutMillis: 60000,          // เพิ่มเวลา idle timeout เป็น 1 นาที
-  max: 30,                           // เพิ่มจำนวน connection สูงสุด
-  min: 5,                            // กำหนดจำนวน connection ขั้นต่ำ
+  connectionTimeoutMillis: 30000,    // 30 วินาที
+  idleTimeoutMillis: 60000,          // 1 นาที
+  max: 30,
+  min: 5,
   allowExitOnIdle: true,
-  statement_timeout: 15000,          // timeout สำหรับ query (15 วินาที)
-  query_timeout: 15000               // timeout สำหรับ query execution
+  statement_timeout: 30000,          // 30 วินาที
+  query_timeout: 30000
 });
+
 
 if (process.env.NODEENV !== 'production') globalForPg.pgPool = pool;
 
@@ -39,27 +32,22 @@ pool.on('error', (err) => {
 });
 
 // ปรับปรุงการทดสอบการเชื่อมต่อ
-pool.connect(async (err, client, release) => {
-  if (err || !client) {
-    console.error('Error acquiring client:', err?.stack);
-    process.exit(-1);
-    return;
-  }
-
+(async () => {
   try {
-    await client.query('CREATE EXTENSION IF NOT EXISTS plpgsql');
-    
+    await pool.query('CREATE EXTENSION IF NOT EXISTS plpgsql');
+
     const [extensionResult, versionResult, connectionTest] = await Promise.all([
-      client.query('SELECT * FROM pg_extension WHERE extname = \'plpgsql\''),
-      client.query('SELECT version()'),
-      client.query('SELECT NOW()')
+      pool.query(`SELECT * FROM pg_extension WHERE extname = 'plpgsql'`),
+      pool.query('SELECT version()'),
+      pool.query('SELECT NOW()')
     ]);
 
     if (extensionResult.rows.length === 0) {
       throw new Error('plpgsql extension installation failed');
     }
+
     console.log("--------------------------------------------------------");
-    console.log('Database Connection Status:');
+    console.log('✅ Database Connected!');
     console.log('- Connected at:', connectionTest.rows[0].now);
     console.log('- PostgreSQL version:', versionResult.rows[0].version);
     console.log('- Pool configuration:', {
@@ -68,15 +56,14 @@ pool.connect(async (err, client, release) => {
       waitingCount: pool.waitingCount
     });
     console.log("--------------------------------------------------------");
+
   } catch (error: unknown) {
-    console.error('Database initialization error:', error);
+    console.error('❌ Database initialization error:', error);
     if (error instanceof Error) {
       console.error('Detailed error:', error.message);
     }
     process.exit(-1);
-  } finally {
-    release();
   }
-});
+})();
 
 export default pool;

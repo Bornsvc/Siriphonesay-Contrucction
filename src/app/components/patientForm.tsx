@@ -4,6 +4,9 @@ import Image from "next/image";
 import ClodeIcon from "@/icons/close.png";
 import axios from "axios";
 import ConfirmClose from './confirmClose'
+import Input from './input'
+// import workersSchema from "@/lib/balibationSchema";
+// import z from 'zod'
 
 interface FormData {
   id: string;
@@ -21,6 +24,8 @@ interface FormData {
   participationCount: number;
   rating: number;
   image: File | null;
+  status:string;
+  field:string
 }
 
 const CustomerForm: React.FC = () => {
@@ -38,14 +43,27 @@ const CustomerForm: React.FC = () => {
     position: "",
     teamCount: 0,
     participationCount: 0,
-    rating: 5,
-    image: null
+    rating: 0,
+    image: null,
+    status: '',
+    field: ''
   });
   const [imagePreview, setImagePreview] = useState<string>('');
   const { setFormactive, setToastMassage, setSearchQuery } = useContext(FormContext); 
   const [comFirm, setComfirm] = useState<boolean>(false);
+  // const [selected, setSelected] = useState("On_work");
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const options = [
+    { label: "On-work", value: "On-work", bgColor: "bg-red-500", textColor: "text-white" },
+    { label: "Free", value: "Free", bgColor: "bg-green-500", textColor: "text-white" },
+  ];
+
+  // const handleSelect = (value: string) => {
+  //   setSelected(value);
+  // };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
     
     if (name === "birthDate") {
@@ -68,8 +86,10 @@ const CustomerForm: React.FC = () => {
         ...prevData,
         [name]: value
       }));
+      console.log("formData?>>>>>", formData)
     }
   };
+
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -95,8 +115,10 @@ const CustomerForm: React.FC = () => {
       formDataToSend.append('position', formData.position);
       formDataToSend.append('team_count', String(formData.teamCount));
       formDataToSend.append('participation_count', String(formData.participationCount));
+      formDataToSend.append('status', String(formData.status));
       formDataToSend.append('rating', String(formData.rating));
-      
+      formDataToSend.append('field', String(formData.field));
+
       if (formData.image) {
         formDataToSend.append('image', formData.image);
       }
@@ -107,7 +129,7 @@ const CustomerForm: React.FC = () => {
         },
       });
 
-      console.log(response)
+      console.log('response submit>>',response.data)
 
       setToastMassage(true);
       setFormactive(false);
@@ -203,58 +225,51 @@ const CustomerForm: React.FC = () => {
             
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label htmlFor="firstName" className="block text-base font-medium text-gray-700 mb-1">ຊື່</label>
-                <input
-                  id="firstName"
+                <Input
+                  label="ຊື່"
+                  type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="middleName" className="block text-base font-medium text-gray-700 mb-1">ຊື່ຫຼີ້ນ</label>
-                <input
-                  id="middleName"
-                  name="middleName"
-                  value={formData.middleName}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-base font-medium text-gray-700 mb-1">ນາມສກຸນ</label>
-                <input
-                  id="lastName"
+                <Input
+                  label="ນາມສະກຸນ"
+                  type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <Input
+                  label="ຊື່ຫຼີ້ນ"
+                  type="text"
+                  name="middleName"
+                  value={formData.middleName}
+                  onChange={handleChange}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label htmlFor="birthDate" className="block text-base font-medium text-gray-700 mb-1">ວັນເກີດ</label>
-                <input
-                  id="birthDate"
+                 <Input
+                  label="ວັນເກີດ"
                   type="date"
                   name="birthDate"
                   value={formData.birthDate}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="age" className="block text-base font-medium text-gray-700 mb-1">ອາຍຸ</label>
-                <input
-                  id="age"
+                  <Input
+                  label="ອາຍຸ"
                   type="number"
                   name="age"
                   value={formData.age}
-                  readOnly
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg bg-gray-50 cursor-not-allowed sm:text-sm"
+                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -275,14 +290,12 @@ const CustomerForm: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label htmlFor="phoneNumber" className="block text-base font-medium text-gray-700 mb-1">ເບີໂທລະສັບ</label>
-                <input
-                  id="phoneNumber"
+                 <Input
+                  label="ເບີໂທລະສັບ"
                   type="tel"
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -308,84 +321,114 @@ const CustomerForm: React.FC = () => {
               ຂໍ້ມູນການເຮັດວຽກ
             </h3>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div>
-                <label htmlFor="position" className="block text-base font-medium text-gray-700 mb-1">ຕຳແໜ່ງ</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Status Dropdown */}
+              <div className="w-full">
+                <label className="block text-base font-medium text-gray-700 mb-1">
+                  ສະຖານະ
+                </label>
                 <div className="relative">
+                  {/* Hidden input for form */}
                   <input
-                    id="position"
+                    type="hidden"
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                  />
+
+                  {/* Selected Item */}
+                  <button
+                    type="button"
+                    className="w-full px-4 py-3 text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm flex items-center justify-between"
+                    onClick={() => setDropdownOpen((prev) => !prev)}
+                  >
+                    <span className={`px-3 py-1 rounded-full ${options.find(opt => opt.value === formData.status)?.bgColor} ${options.find(opt => opt.value === formData.status)?.textColor}`}>
+                      {options.find(opt => opt.value === formData.status)?.label || "ເລືອກສະຖານະ"}
+                    </span>
+                    <svg className="h-4 w-4 text-gray-500 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown List */}
+                  {dropdownOpen && (
+                    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                      {options.map((option) => (
+                        <li
+                          key={option.value}
+                          onClick={() => {
+                            handleChange({ target: { name: 'status', value: option.value } });
+                            setDropdownOpen(false);
+                          }}
+                          className={`px-4 py-2 cursor-pointer hover:bg-amber-100`}
+                        >
+                          {option.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+                <div>
+                  <Input
+                    label="ສະໜາມ"
+                    type="text"
+                    name="field"
+                    value={formData.field}
+                    onChange={handleChange}
+                  />   
+                </div>
+
+
+              {/* Position Input */}
+              <div>
+                <div className="relative">
+                   <Input
+                    label="ຕຳແໜ່ງ"
+                    type="text"
                     name="position"
                     value={formData.position}
                     onChange={handleChange}
-                    className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    placeholder="ກະລຸນາປ້ອນຕຳແໜ່ງ"
-                  />
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </span>
+                  />   
                 </div>
               </div>
 
+              {/* Purpose Input */}
               <div>
-                <label htmlFor="purpose" className="block text-base font-medium text-gray-700 mb-1">ໜ້າທີ</label>
                 <div className="relative">
-                  <input
-                    id="purpose"
+                   <Input
+                    label="ໜ້າທີ່"
+                    type="text"
                     name="purpose"
                     value={formData.purpose}
                     onChange={handleChange}
-                    className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    placeholder="ກະລຸນາປ້ອນໜ້າທີ່"
-                  />
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </span>
+                  />   
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <div>
-                <label htmlFor="teamCount" className="block text-base font-medium text-gray-700 mb-1">ຈຳນວນທີມ</label>
                 <div className="relative">
-                  <input
-                    id="teamCount"
-                    type="number"
+                    <Input
+                    label="ຈຳນວນທີມ"
+                    type="text"
                     name="teamCount"
-                    min="0"
                     value={formData.teamCount}
                     onChange={handleChange}
-                    className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                  />
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </span>
+                  />   
                 </div>
               </div>
 
               <div>
-                <label htmlFor="participationCount" className="block text-base font-medium text-gray-700 mb-1">ການເຂົ້າຮ່ວມ</label>
                 <div className="relative">
-                  <input
-                    id="participationCount"
-                    type="number"
+                    <Input
+                    label="ການເຂົ້າຮ່ວມ"
+                    type="text"
                     name="participationCount"
-                    min="0"
                     value={formData.participationCount}
                     onChange={handleChange}
-                    className="appearance-none relative block w-full px-3 py-3 pl-10 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                  />
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </span>
+                  />   
                 </div>
               </div>
 
@@ -431,5 +474,4 @@ const CustomerForm: React.FC = () => {
     </div>
   );
 };
-
 export default CustomerForm;

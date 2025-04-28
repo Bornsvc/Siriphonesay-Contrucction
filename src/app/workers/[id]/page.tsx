@@ -25,6 +25,8 @@ interface Worker {
   team_count: number;
   participation_count: number;
   rating: number;
+  status:string;
+  field: string;
   image_url?: string;
 }
 export default function WorkerDetails() { // Capitalize component name
@@ -299,15 +301,43 @@ export default function WorkerDetails() { // Capitalize component name
                     <p className="text-lg font-medium text-gray-800">{workers.position || 'ບໍ່ມີຂໍ້ມູນ'}</p>
                   </div>
                   <div>
-                    <p className="text-base text-amber-600">ຈຳນວນທີມງານ</p>
-                    <p className="text-lg font-medium text-gray-800">{workers.team_count || 0}</p>
+                    <p className="text-base text-amber-600">ສະຖານະ</p>
+                    <span 
+                      className={`
+                        px-4 py-1 rounded-full text-sm font-medium inline-block
+                        ${workers.status === 'On-work' 
+                          ? 'bg-red-500 text-white' 
+                          : workers.status === 'Free' 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-gray-500 text-white'
+                        }
+                      `}
+                    >
+                      {workers.status || 'ບໍ່ມີຂໍ້ມູນ'}
+                    </span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <p className="text-base text-amber-600">ສະໜາມ</p>
+                    <p className="text-lg font-medium text-gray-800">{workers.field || 'ບໍ່ມີຂໍ້ມູນ'}</p>
+                  </div>
+                  <div>
+                    <p className="text-base text-amber-600">ໜ້າທີ່</p>
+                    <p className="text-lg font-medium text-gray-800">{workers.purpose || 'ບໍ່ມີຂໍ້ມູນ'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-base text-amber-600">ຈຳນວນທີມງານ</p>
+                    <p className="text-lg font-medium text-gray-800">{workers.team_count || 0}</p>
+                  </div>
+                  <div>
                     <p className="text-base text-amber-600">ການເຂົ້າຮ່ວມ</p>
                     <p className="text-lg font-medium text-gray-800">{workers.participation_count || 0}</p>
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-base text-amber-600">ຄະແນນ</p>
                     <p className="text-lg font-medium text-gray-800">{workers.rating || 0}/5</p>

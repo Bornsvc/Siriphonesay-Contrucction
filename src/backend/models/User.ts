@@ -16,8 +16,17 @@ class UserModel {
     this.pool = pool;
   }
 
+  async createUser(username: string, password: string, role: string = 'user'): Promise<User> {
+    // แฮชรหัสผ่านก่อนเก็บในฐานข้อมูล
+    const hashedPassword = await bcrypt.hash(password, 10);
   
-
+    // คำสั่ง SQL เพื่อแทรกข้อมูลผู้ใช้
+    const query = 'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING *';
+    const result = await this.pool.query(query, [username, hashedPassword, role]);
+    
+    // ส่งกลับข้อมูลผู้ใช้ที่ถูกสร้าง
+    return result.rows[0];
+  }
   async updatePassword(username: string, newPassword: string): Promise<boolean> {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -35,7 +44,6 @@ class UserModel {
     const result = await this.pool.query(query, [username]);
     return result.rows[0] || null;
   }
-
   async validatePassword(inputPassword: string, hashedPassword: string): Promise<boolean> {
     // console.log("Input password:", inputPassword);
     // console.log("Hashed password:", hashedPassword);
@@ -43,20 +51,6 @@ class UserModel {
     // console.log("Password match result:", isMatch);
     return isMatch;
   }
-  
-
-  async createUser(username: string, password: string, role: string = 'user'): Promise<User> {
-    // แฮชรหัสผ่านก่อนเก็บในฐานข้อมูล
-    const hashedPassword = await bcrypt.hash(password, 10);
-  
-    // คำสั่ง SQL เพื่อแทรกข้อมูลผู้ใช้
-    const query = 'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING *';
-    const result = await this.pool.query(query, [username, hashedPassword, role]);
-    
-    // ส่งกลับข้อมูลผู้ใช้ที่ถูกสร้าง
-    return result.rows[0];
-  }
-  
 }
 
 export default UserModel;

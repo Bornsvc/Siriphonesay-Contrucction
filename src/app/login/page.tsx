@@ -42,14 +42,12 @@ export default function LoginPage() {
           password: formData.password,
         }),
       });
-      console.log("response>>>>>>>>>>>>",response)
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message);
       }
-
       localStorage.setItem('token', data.token);
       if (formData.rememberMe) {
         localStorage.setItem('username', formData.username);

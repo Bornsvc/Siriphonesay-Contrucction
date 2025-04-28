@@ -102,14 +102,18 @@ export async function POST(req: Request) {
       data.get('participation_count') || 0,
       data.get('rating') || 5,
       image_url,
+      data.get('status'),  // ✨ เพิ่ม status
+      data.get('field'),   // ✨ เพิ่ม field
     ];
 
     const result = await pool.query(
       `INSERT INTO workers (
         id, first_name, middle_name, last_name, birth_date, 
         age, address, phone_number, purpose, gender, 
-        position, team_count, participation_count, rating, image_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+        position, team_count, participation_count, rating, image_url,
+        status, field
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
+                $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       values
     );

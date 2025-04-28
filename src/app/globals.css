@@ -2,8 +2,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&display=swap');
 
-
-
 /* styles/globals.css */
 body {
   font-family: 'Noto Sans Lao', 'Noto Sans Thai', 'Noto Sans', sans-serif;
@@ -11,6 +9,9 @@ body {
   font-style: normal;
 }
 
+a{
+  text-decoration: none;
+}
 
 .blackdrop {
     position: fixed; /* ทำให้มันคงที่ในหน้าจอ */

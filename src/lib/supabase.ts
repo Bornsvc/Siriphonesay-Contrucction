@@ -9,20 +9,54 @@ export async function uploadImage(file: File) {
   const cleanFileName = file.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
   const filename = `worker_${Date.now()}_${cleanFileName}`;
 
-  const { data, error } = await supabase.storage
-    .from('workers') // bucket name
-    .upload(filename, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type,
-    });
-    console.log(data)
+  try {
+    const { data, error } = await supabase.storage
+      .from('workers')
+      .upload(filename, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
 
-  if (error) throw error;
+    if (error) throw error;
+    console.log('Uploaded successfully:', data);
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('workers')
-    .getPublicUrl(filename);
+    const { publicUrl} = supabase.storage
+      .from('workers')
+      .getPublicUrl(filename).data;
 
-  return publicUrl;
+    if (!publicUrl) throw new Error("Failed to get public URL");
+
+    return publicUrl;
+  } catch (error) {
+    console.error("Upload failed:", error);
+    throw error; // หรือคุณสามารถแสดงผลใน UI ตามต้องการ
+  }
+}
+
+export async function uploadDocWorkerImage(file: File) {
+  const cleanFileName = file.name.replace(/\s+/g, '_').replace(/[^\w.-]/g, '');
+  const filename = `doc-worker_${Date.now()}_${cleanFileName}`;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from('doc-worker') // ระบุ Bucket ที่จะอัปโหลด
+      .upload(filename, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
+      console.log(data)
+    if (error) throw error;
+    const { publicUrl } = supabase.storage
+      .from('doc-worker')
+      .getPublicUrl(filename).data;
+
+    if (!publicUrl) throw new Error("Failed to get public URL");
+
+    return publicUrl;
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
 }

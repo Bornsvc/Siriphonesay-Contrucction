@@ -9,16 +9,11 @@ const userModel = new UserModel(pool);
 const JWTSECRET = process.env.JWTSECRET || 'your-secret-key';
 
 
-
-
-
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
     console.log("Received username:", username);
     console.log("Received password:", password);
-
-
 
     const user = await userModel.findByUsername(username);
     if (!user) {

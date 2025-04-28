@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Image from "next/image";
+import Input from './input'
 // import { useSession } from 'next-auth/react';
 // import { useRouter } from 'next/navigation';
 // import { getCurrentUserId } from '@/utils/auth';
@@ -22,6 +23,8 @@ interface Worker {
   participation_count: number;
   rating: number;
   image_url?: string;
+  status: string;
+  field: string;
 }
 
 interface EditworkerFormProps {
@@ -45,10 +48,12 @@ interface FormData {
   rating: number;
   image: File | null;
   imagePreview: string;
+  status: string;
+  field: string;
+  purpose: string
 }
 
 const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) => {
-  
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -63,7 +68,10 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
     participationCount: 0,
     rating: 0,
     image: null,
-    imagePreview: ""
+    imagePreview: "",
+    status: "",
+    field: "",
+    purpose: "",
   });
   const [imagePreview, setImagePreview] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -89,8 +97,10 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
           participationCount: worker.participation_count,
           rating: worker.rating,
           image: worker.image_url,
-          imagePreview: typeof worker.image_url === 'string' ? worker.image_url : ''
-
+          imagePreview: typeof worker.image_url === 'string' ? worker.image_url : '',
+          status: worker.status,
+          field: worker.field,
+          purpose: worker.purpose
         });
         setLoading(false);
       } catch (err) {
@@ -125,7 +135,7 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
    };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    console.log("Before submit", formData)
     try {
       if (!formData.birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
         alert('Please input date of birth follow this format YYYY-MM-DD');
@@ -145,7 +155,9 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
         formDataToSend.append('team_count', String(formData.teamCount));
         formDataToSend.append('participation_count', String(formData.participationCount));
         formDataToSend.append('rating', String(formData.rating));
-
+        formDataToSend.append('status', formData.status);
+        formDataToSend.append('field', formData.field);
+        formDataToSend.append('purpose', formData.purpose);
       if (formData.image) {
         formDataToSend.append('image', formData.image);
       }
@@ -159,7 +171,6 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
       });
       console.log('success full !!! EDIT!!',response.data)
       window.location.reload();
-      onClose();
     } catch (error) {
       console.error('Error updating patient:', error);
       if (axios.isAxiosError(error)) {
@@ -273,61 +284,52 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
             <h3 className="text-xl font-semibold text-gray-700 mt-5">ຂໍ້ມູນສ່ວນໂຕ</h3>
             <div className="grid grid-cols-16 md:grid-cols-2">
               <div>
-                <label htmlFor="firstName" className="block text-base font-medium text-gray-700 mb-1">ຊື່</label>
-                <input
-                  id="firstName"
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                <Input 
+                 label="ຊື່"
+                 type="text"
+                 name="firstName"
+                 value={formData.firstName}
+                 onChange={handleChange}
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-base font-medium text-gray-700 mb-1">ນາມສະກຸນ</label>
-                <input
-                  id="lastName"
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                <Input 
+                 label="ນາມສະກຸນ"
+                 type="text"
+                 name="lastName"
+                 value={formData.lastName}
+                 onChange={handleChange}
                 />
               </div>
+              
               <div>
-                <label htmlFor="middle_name" className="block text-base font-medium text-gray-700 mb-1">ຊື່ເລ່ນ</label>
-                <input
-                  id="middle_name"
-                  type="text"
-                  name="middle_name"
-                  value={formData.middle_name}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                <Input 
+                 label="ຊື່ເລ່ນ"
+                 type="text"
+                 name="middle_name"
+                 value={formData.middle_name}
+                 onChange={handleChange}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label htmlFor="birthDate" className="block text-base font-medium text-gray-700 mb-1">ວັນເກີດ</label>
-                <input
-                  id="birthDate"
-                  type="date"
-                  name="birthDate"
-                  value={formData.birthDate}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition duration-200"
+                 <Input 
+                 label="ວັນເກີດ"
+                 type="date"
+                 name="birthDate"
+                 value={formData.birthDate}
+                 onChange={handleChange}
                 />
               </div>
               <div>
-                <label htmlFor="age" className="block text-base font-medium text-gray-700 mb-1">ອາຍຸ</label>
-                <input
-                  id="age"
-                  type="number"
-                  name="age"
-                  value={formData.age}
-                  readOnly
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg bg-gray-50 cursor-not-allowed sm:text-sm"
+                 <Input 
+                 label="ອາຍຸ"
+                 type="number"
+                 name="age"
+                 value={formData.age}
+                 onChange={handleChange}
                 />
               </div>
             </div>
@@ -349,14 +351,12 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
                 </select>
               </div>
               <div>
-                <label htmlFor="phoneNumber" className="block text-base font-medium text-gray-700 mb-1">ເບີໂທລະສັບ</label>
-                <input
-                  id="phoneNumber"
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber || ''}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                <Input 
+                 label="ເບີໂທລະສັບ"
+                 type="tel"
+                 name="phoneNumber"
+                 value={formData.phoneNumber}
+                 onChange={handleChange}
                 />
               </div>
             </div>
@@ -382,52 +382,74 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
             <h3 className="text-xl font-semibold text-gray-700">ຂໍ້ມູນການເຮັດວກ</h3>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label htmlFor="position" className="block text-base font-medium text-gray-700 mb-1">ຕຳແໜ່ງ</label>
-                <input
-                  id="position"
-                  type="text"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                <Input 
+                 label="ຕຳແໜ່ງ"
+                 type="text"
+                 name="position"
+                 value={formData.position}
+                 onChange={handleChange}
                 />
               </div>
               <div>
-                <label htmlFor="teamCount" className="block text-base font-medium text-gray-700 mb-1">ຈຳນວນທີມ</label>
-                <input
-                  id="teamCount"
-                  type="number"
-                  name="teamCount"
-                  value={formData.teamCount}
+                <Input 
+                 label="ສະໜາມ"
+                 type="text"
+                 name="field"
+                 value={formData.field}
+                 onChange={handleChange}
+                />
+              </div>
+              <div>
+                <label htmlFor="status" className="block text-base font-medium text-gray-700 mb-1">ສະຖານະ</label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
                   onChange={handleChange}
                   className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                >
+                  <option value="">ເລືອກສະຖານະ</option>
+                  <option value="On-work">On-work</option>
+                  <option value="Free">Free</option>
+                </select>
+              </div>
+              <div>
+                <Input 
+                 label="ຈຳນວນທີມ"
+                 type="number"
+                 name="teamCount"
+                 value={formData.teamCount}
+                 onChange={handleChange}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label htmlFor="participationCount" className="block text-base font-medium text-gray-700 mb-1">ການເຂົ້າຮ່ວມ</label>
-                <input
-                  id="participationCount"
-                  type="number"
-                  name="participationCount"
-                  value={formData.participationCount}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                <Input 
+                 label="ການເຂົ້າຮ່ວມ"
+                 type="number"
+                 name="participationCount"
+                 value={formData.participationCount}
+                 onChange={handleChange}
                 />
               </div>
               <div>
-                <label htmlFor="rating" className="block text-base font-medium text-gray-700 mb-1">ຄະແນນ (1-5)</label>
-                <input
-                  id="rating"
-                  type="number"
-                  name="rating"
-                  min="1"
-                  max="5"
-                  value={formData.rating}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm transition duration-200"
+                 <Input 
+                 label="ຄະແນນ (1-5)"
+                 type="number"
+                 name="rating"
+                 value={formData.rating}
+                 onChange={handleChange}
+                />
+              </div>
+              <div>
+                 <Input 
+                 label="ໜ້າທີ"
+                 type="text"
+                 name="purpose"
+                 value={formData.purpose || 'general worker'}
+                 onChange={handleChange}
                 />
               </div>
             </div>
