@@ -15,11 +15,9 @@ cloudinary.config({
   });
 
   
-  export async function POST(
-    req: NextRequest, 
-    { params }: { params: { id: string } }
-  ) {
-    const id = params.id;  // ← ตรงนี้ปกติเลย ไม่ต้อง await
+  export async function POST( req: NextRequest ) {
+    const url = new URL(req.url);
+    const id = url.pathname.split('/').pop();
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
   
@@ -48,11 +46,9 @@ cloudinary.config({
   }
   
 
-  export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    const { id } = params;
+  export async function GET( req: NextRequest) {
+    const url = new URL(req.url);
+    const id = url.pathname.split('/').pop();
   
     try {
       // กำหนด type ให้ searchResult ชัดเจน
@@ -79,22 +75,18 @@ cloudinary.config({
     }
   }
   
-  export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string, publicId: string } } // You can pass the public ID to delete
-  ) {
-    const { id, publicId } = params;
+  export async function DELETE( req: NextRequest) {
+    const url = new URL(req.url);
+    const id = url.pathname.split('/').pop();
   
     try {
       // Make sure the publicId is valid
-      if (!publicId) {
+      if (!id) {
         return NextResponse.json({ error: 'Public ID is required for deletion' }, { status: 400 });
       }
   
       // Call Cloudinary's destroy API
-      const result = await cloudinary.uploader.destroy(publicId, {
-        folder: `workers/${id}`,
-      });
+      const result = await cloudinary.uploader.destroy(id); // Removed folder parameter
   
       if (result.result === 'ok') {
         return NextResponse.json({ message: 'Image deleted successfully' });
@@ -106,3 +98,4 @@ cloudinary.config({
       return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
     }
   }
+  
