@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { FormContext } from "@/context/FormContext"; // Import the context
 import Image from "next/image";
 import ClodeIcon from "@/icons/close.png";
@@ -63,6 +63,23 @@ const CustomerForm: React.FC = () => {
   //   setSelected(value);
   // };
 
+    useEffect(() => {
+      const getID = async () => {
+        try {
+          const response = await axios.get('api/workers/all')
+
+          const ID = (response.data).length + 1
+          setFormData((preID) => ({
+            ...preID,
+            id: ID
+          }));
+
+        } catch (error) {
+          console.log(error)
+        }
+      }
+      getID();
+    }, [])
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
     
@@ -90,7 +107,6 @@ const CustomerForm: React.FC = () => {
     }
   };
 
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -102,6 +118,7 @@ const CustomerForm: React.FC = () => {
     e.preventDefault();
     try {
       const formDataToSend = new FormData();
+
       formDataToSend.append('id', formData.id);
       formDataToSend.append('first_name', formData.firstName);
       formDataToSend.append('middle_name', formData.middleName);
@@ -120,10 +137,10 @@ const CustomerForm: React.FC = () => {
       formDataToSend.append('field', String(formData.field));
 
       if (formData.image) {
-        formDataToSend.append('image', formData.image);
+        formDataToSend.append('image', formData.image); // ✅ image included in same form
       }
 
-      const response = await axios.post('/api/workers', formDataToSend, {
+      const response = await axios.post('/api/workers/submit-all', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -139,6 +156,8 @@ const CustomerForm: React.FC = () => {
       console.error('Error submitting form:', error);
       setToastMassage(false);
     }
+    console.log('formData.image >>>', formData.image);
+    console.log('is File?', formData.image instanceof File);
   };
  
   const handleClose = () => {
@@ -224,6 +243,17 @@ const CustomerForm: React.FC = () => {
             <h3 className="text-2xl font-semibold text-gray-800 border-b pb-2">ຂໍ້ມູນສ່ວນຕົວ</h3>
             
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <label htmlFor="id">ID</label>
+                <input
+                  type="text"
+                  name="id"
+                  value={formData.id}
+                  readOnly
+                  onChange={handleChange}
+                  className="appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                />
+              </div>
               <div>
                 <Input
                   label="ຊື່"

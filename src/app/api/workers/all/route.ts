@@ -1,6 +1,7 @@
 import { pool } from '@/backend/config/database';
 import { NextResponse } from 'next/server';
 
+// just for get count all worker to make ID
 export async function GET() {
     try {
         const result = await pool.query('SELECT * FROM workers'); 

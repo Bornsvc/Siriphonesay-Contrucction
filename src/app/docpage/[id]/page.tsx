@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
 import Loding from '@/app/components/loding';
+import ConfirmDeleteModal from '@/app/components/ConfirmDeleteModal';
 
 // ประเภทข้อมูลที่ใช้
 interface ImageColumns {
@@ -23,37 +24,37 @@ const renderImageSection = (
   docImage: ImageColumns,
   handleImageUpload: (column: keyof ImageColumns, e: React.ChangeEvent<HTMLInputElement>) => void,
   handleImageClick: (img: string) => void,
+  handleDeleteClick: (url: string) => void
 ) => (
   <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
     <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[500px] overflow-y-auto p-2">
-        {(docImage[column] || []).map((Doc, index) => {
-        return (
+        {(docImage[column] || []).map((Doc, index) => (
           <div
             key={`doc-${index}`}
             className="relative aspect-square group overflow-hidden rounded-lg"
             onClick={() => handleImageClick(Doc)}
           >
             <Image
-               src={Doc.startsWith('http') ? Doc : `/uploads/${Doc}`} 
+              src={Doc.startsWith('http') ? Doc : `/uploads/${Doc}`} 
               alt={`Document`}
               fill
               className="object-cover transition-transform relative duration-200 group-hover:scale-105"
             />
 
             <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering image click event
-                  // handleDelete(Doc); // Call the delete handler function
-                }}
-                className="absolute flex justify-center items-center top-0 w-auto h-8 cursor-pointer aspect-square right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              >
-                <span>x</span>
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteClick(Doc); // ✅ แทนที่ handleDelete โดยตรง
+              }}
+              className="absolute flex justify-center items-center top-0 w-auto h-8 cursor-pointer aspect-square right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              <span>x</span>
             </button>
+
           </div>
-        ) 
-        })}
+        ))}
         {images[column].map((img, index) => (
           <div
             key={`img-${index}`}
@@ -97,7 +98,6 @@ function Page() {
     column2: [],
     column3: [],
   });
-  const [realFiles, setRealFiles] = useState<File[]>([]);
   const [docImage, setDocImage] = useState<ImageColumns>({
     column1: [],
     column2: [],
@@ -107,17 +107,86 @@ function Page() {
   const [isLoading, setIsLOading] = useState<boolean>(false);
   const params = useParams();
   const id = params.id as string | undefined;
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [imageToDelete, setImageToDelete] = useState<string | null>(null);
 
+  
+  // This state now tracks files and their associated columns
+  const [realFiles, setRealFiles] = useState<{ file: File, column: keyof ImageColumns }[]>([]);
+
+  const handleImageUpload = (column: keyof ImageColumns, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      const newImages = selectedFiles.map((file) => URL.createObjectURL(file));
+
+      // Update the specific column state independently
+      setImages((prevImages) => ({
+        ...prevImages,
+        [column]: [...prevImages[column], ...newImages], // Add to the correct column
+      }));
+
+      // Store each file with its column association
+      setRealFiles((prev) => [
+        ...prev,
+        ...selectedFiles.map((file) => ({ file, column })), // Associate the file with the column
+      ]);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsLOading(true);
+    try {
+      if (realFiles.length === 0) {
+        alert('กรุณาเลือกรูปภาพก่อนบันทึก');
+        return;
+      }
+
+      const formData = new FormData();
+
+      // Group files by column and append them to formData
+      realFiles.forEach(({ file, column }) => {
+        formData.append('files', file);
+        formData.append('column', column); // Add the column for each file
+      });
+
+      const response = await axios.post(`/api/workers/doc-worker/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      console.log('Upload response:', response);
+
+      // Reset only the columns that were updated
+      setRealFiles([]);
+
+      if (id) {
+        // Fetch updated images for all columns after saving
+        const updatedImages = await axios.get<ImageColumns>(`/api/workers/doc-worker/${id}`);
+        setDocImage(updatedImages.data);
+      }
+
+      window.location.reload();
+    } catch (error) {
+      console.error('Error saving images:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึก');
+    } finally {
+      setIsLOading(false);
+    }
+  };
+
+  const handleDeleteClick = (url: string) => {
+    setImageToDelete(url); // เก็บ url รูปที่ต้องการลบ
+    setConfirmDelete(true); // เปิด modal
+  };
+  
 
   useEffect(() => {
     const fetchDocImage = async () => {
       try {
-        setIsLOading(true)
+        setIsLOading(true);
         const response = await axios.get(`/api/workers/doc-worker/${id}`);
         console.log('RESPONSE:', response.data); // ดูให้ชัวร์
-  
+
         const data = response.data;
-  
+
         setDocImage({
           column1: data.column1 || [],
           column2: data.column2 || [],
@@ -125,13 +194,38 @@ function Page() {
         });
       } catch (error) {
         console.error("Error fetching document images:", error);
-      }finally{
-        setIsLOading(false)
+      } finally {
+        setIsLOading(false);
       }
     };
-  
+
     fetchDocImage();
   }, [id]);
+
+  const handleDelete = async (url: string) => {
+    setIsLOading(true)
+    try {
+      const response = await fetch(`/api/workers/doc-worker/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }), // 💡 ต้องส่ง publicId ที่จะลบ
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setIsLOading(false)
+        window.location.reload(); // หรือ setState เพื่อลบรูปออกจาก UI
+      } else {
+        alert(result.error || "ລຶບຮູບບໍ່ສຳເລັດ");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("ມີຂໍ້ຜິດພາດໃນການລຶບຮູບ");
+    }
+  };
 
   const handleImageClick = (img: string) => {
     setSelectedImage(img);
@@ -141,85 +235,49 @@ function Page() {
     setSelectedImage(null);
   };
 
-  const handleImageUpload = (column: keyof ImageColumns, e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files);
-
-      const newImages = selectedFiles.map((file) => URL.createObjectURL(file));
-
-      setImages((prevImages) => ({
-        ...prevImages,
-        [column]: [...prevImages[column], ...newImages],
-      }));
-
-      setRealFiles((prev) => [...prev, ...selectedFiles]);
-    }
-  };
-
-  const handleSave = async () => {
-    setIsLOading(true)
-    try {
-      if (realFiles.length === 0) {
-        alert('กรุณาเลือกรูปภาพก่อนบันทึก');
-        return;
-      }
-
-      const formData = new FormData();
-      realFiles.forEach((file) => {
-        formData.append('files', file);
-      });
-
-      const response = await axios.post(`/api/workers/doc-worker/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      console.log(response.data);
-
-      // อัปเดตภาพหลังบันทึกเสร็จ
-      setImages({ column1: [], column2: [], column3: [] });
-      setRealFiles([]);
-      if (id) {
-        const updatedImages = await axios.get<ImageColumns>(`/api/workers/doc-worker/${id}`);
-        setDocImage(updatedImages.data);
-      }
-      window.location.reload();
-    } catch (error) {
-      console.error('Error saving images:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึก');
-    } finally{
-      setIsLOading(false)
-    }
-  };
-
   return (
     <div className="w-full min-h-[100vh] bg-gray-50 p-6">
       <Link href="/" className="text-blue-600 hover:text-blue-800">
         Back to Home
       </Link>
       {isLoading ? <Loding /> : null}
-      
-
       <h1 className="text-3xl font-bold text-center mb-8">ໃບເບກເງິນ</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {renderImageSection('column1', 'ຮູບພາບຄົງມີໃນປະເພດ 1', images, docImage, handleImageUpload, handleImageClick)}
-        {renderImageSection('column2', 'ຮູບພາບຄົງມີໃນປະເພດ 2', images, docImage, handleImageUpload, handleImageClick)}
-        {renderImageSection('column3', 'ຮູບພາບຄົງມີໃນປະເພດ 3', images, docImage, handleImageUpload, handleImageClick)}
+        {renderImageSection('column1', 'ຮູບພາບຂອງພະນັກງານ', images, docImage, handleImageUpload, handleImageClick, handleDeleteClick)}
+        {renderImageSection('column2', 'ຮູບພາບຂອງຮູບພາບ', images, docImage, handleImageUpload, handleImageClick, handleDeleteClick)}
+        {renderImageSection('column3', 'ຮູບພາບຄວາມຄິດ', images, docImage, handleImageUpload, handleImageClick, handleDeleteClick)}
       </div>
 
-      <div className="w-full text-center py-10">
+      {confirmDelete && imageToDelete && (
+        <ConfirmDeleteModal
+          show={confirmDelete}
+          onClose={() => {
+            setConfirmDelete(false);
+            setImageToDelete(null); // reset
+          }}
+          onConfirm={() => {
+            handleDelete(imageToDelete); // ✅ เรียกฟังก์ชันลบจริง
+            setConfirmDelete(false);
+            setImageToDelete(null);
+          }}
+        />
+      )}
+
+
+      <div className="text-center mt-8">
         <button
           onClick={handleSave}
-          className="bg-yellow-500 py-3 px-8 rounded-2xl text-white font-semibold shadow-md hover:bg-yellow-600 transition duration-200 transform hover:scale-105"
+          className="text-white bg-blue-500 hover:bg-blue-700 py-2 px-4 rounded-lg"
         >
-          Save
+          ບັນທຶກ
         </button>
       </div>
 
-      {/* Popup modal */}
+      {/* Modal to display full-size image */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={closeModal}>
-          <div className="relative w-11/12 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="relative">
             <Image
               src={selectedImage}
               alt="Selected Image"
@@ -227,6 +285,9 @@ function Page() {
               height={1000}
               className="object-contain max-h-[80vh] rounded-lg"
             />
+            <button onClick={closeModal} className="absolute top-0 right-0 p-4 text-white text-xl">
+              &times;
+            </button>
           </div>
         </div>
       )}

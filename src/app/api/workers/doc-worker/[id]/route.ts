@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse, NextRequest } from 'next/server';
 // import { uploadDocWorkerImage } from '@/lib/supabase';
 import { v2 as cloudinary } from 'cloudinary';
@@ -13,83 +15,125 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
   });
-
+  // Helper function to extract the publicId
+  function extractPublicId(url: string): string {
+    const parts = url.split('/');
   
-  export async function POST( req: NextRequest ) {
+    // Assuming your URL format is like:
+    // https://res.cloudinary.com/demo/image/upload/v1710000000/workers/W0003/column1/filename.jpg
+    // Extract the part after `workers/`, which is `W0003/column1/filename`
+    const workerId = parts[parts.length - 3];  // W0003
+    const column = parts[parts.length - 2];   // column1
+    const fileNameWithExtension = parts.pop(); // filename.jpg
+    
+    // Remove file extension
+    const fileName = fileNameWithExtension?.split('.')[0]; // filename
+  
+    return `workers/${workerId}/${column}/${fileName}`; // workers/W0003/column1/filename
+  }
+  
+  
+  export async function POST(req: NextRequest) {
     const url = new URL(req.url);
-    const id = url.pathname.split('/').pop();
+    const workerId = url.pathname.split('/')[4]; // Extract the workerId (W0003)
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
+    const column = formData.get('column') as string;
+  
+    // Validate column value
+    if (!column || !['column1', 'column2', 'column3'].includes(column)) {
+      return NextResponse.json({ error: 'Invalid column specified' }, { status: 400 });
+    }
   
     const uploadedUrls: string[] = [];
   
+    // Upload files to Cloudinary
     for (const file of files) {
-      if (!(file instanceof File)) continue;
       const buffer = Buffer.from(await file.arrayBuffer());
   
-      const uploadResult = await new Promise<CloudinaryResource>((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: `workers/${id}` },
-          (err, result) => {
-            if (err) reject(err);
-            else if (result) resolve(result);
-            else reject(new Error('No result'));
-          }
-        );
-        stream.end(buffer);
-      });
+      try {
+        const uploadResult = await new Promise<CloudinaryResource>((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: `workers/${workerId}/${column}` },
+            (err, result) => {
+              if (err) reject(err);
+              else if (result) resolve(result);
+              else reject(new Error('No result'));
+            }
+          );
+          stream.end(buffer);
+        });
   
-      uploadedUrls.push(uploadResult.secure_url);
+        uploadedUrls.push(uploadResult.secure_url);
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+      }
     }
   
     return NextResponse.json({ urls: uploadedUrls });
   }
   
+  
+  
 
-  export async function GET( req: NextRequest) {
+  export async function GET(req: NextRequest) {
     const url = new URL(req.url);
-    const id = url.pathname.split('/').pop();
+    const workerId = url.pathname.split('/')[4]; // Extract the workerId (e.g., W0003)
   
     try {
-      // กำหนด type ให้ searchResult ชัดเจน
-      const result = await cloudinary.search
-        .expression(`folder:workers/${id}`)
-        .sort_by('created_at', 'desc')
-        .max_results(100)
-        .execute();
+      // Fetch images for each column in parallel
+      const [res1, res2, res3] = await Promise.all([
+        cloudinary.search.expression(`folder:workers/${workerId}/column1`)
+          .sort_by('created_at', 'desc')
+          .max_results(100)
+          .execute(),
+        cloudinary.search.expression(`folder:workers/${workerId}/column2`)
+          .sort_by('created_at', 'desc')
+          .max_results(100)
+          .execute(),
+        cloudinary.search.expression(`folder:workers/${workerId}/column3`)
+          .sort_by('created_at', 'desc')
+          .max_results(100)
+          .execute(),
+      ]);
   
-        // console.log("result>>>>>>>",result);
-      // resources.map ก็จะรู้ว่า r.secure_url มีจริง
-      const urls = result.resources.map((r: CloudinaryResource) => r.secure_url);
-       // สมมุติ: เราแบ่ง array เป็น 3 column
-      const chunkSize = Math.ceil(urls.length / 3);
-      const column1 = urls.slice(0, chunkSize);
-      const column2 = urls.slice(chunkSize, chunkSize * 2);
-      const column3 = urls.slice(chunkSize * 2);
-
+      // Extract secure URLs from each result
+      const column1 = res1.resources.map((r: CloudinaryResource) => r.secure_url);
+      const column2 = res2.resources.map((r: CloudinaryResource) => r.secure_url);
+      const column3 = res3.resources.map((r: CloudinaryResource) => r.secure_url);
+  
+      // Return the results as a JSON response
       return NextResponse.json({ column1, column2, column3 });
-
     } catch (error) {
       console.error('Fetch Cloudinary images error:', error);
       return NextResponse.json({ error: 'Failed to fetch images' }, { status: 500 });
     }
   }
   
-  export async function DELETE( req: NextRequest) {
-    const url = new URL(req.url);
-    const id = url.pathname.split('/').pop();
+
+
   
+
+  export async function DELETE(req: NextRequest) {
     try {
-      // Make sure the publicId is valid
-      if (!id) {
-        return NextResponse.json({ error: 'Public ID is required for deletion' }, { status: 400 });
+      const body = await req.json();
+      const { url } = body;
+  
+      if (!url) {
+        return NextResponse.json({ error: 'URL is required for deletion' }, { status: 400 });
       }
   
-      // Call Cloudinary's destroy API
-      const result = await cloudinary.uploader.destroy(id); // Removed folder parameter
+      // Extract the publicId from the URL
+      const publicId = extractPublicId(url);  
+      console.log("Deleting publicId:", publicId);
   
-      if (result.result === 'ok') {
-        return NextResponse.json({ message: 'Image deleted successfully' });
+      // Perform the deletion on Cloudinary
+      const result = await cloudinary.uploader.destroy(publicId);
+      console.log("Cloudinary result:", result);
+  
+      if (result.result === 'ok' || result.result === 'not found') {
+        return NextResponse.json({ message: 'Image deleted successfully (or already deleted)' });
       } else {
         return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
       }

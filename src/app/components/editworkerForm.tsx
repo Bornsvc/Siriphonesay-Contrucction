@@ -34,6 +34,7 @@ interface EditworkerFormProps {
 }
 
 interface FormData {
+  id:string
   firstName: string;
   lastName: string;
   middle_name: string;
@@ -55,6 +56,7 @@ interface FormData {
 
 const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) => {
   const [formData, setFormData] = useState<FormData>({
+    id:"",
     firstName: "",
     lastName: "",
     middle_name:"",
@@ -84,6 +86,7 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
         console.log("response>>", response.data)
         const worker = response.data;
         setFormData({
+          id:worker.id,
           firstName: worker.first_name,
           lastName: worker.last_name,
           middle_name: worker.middle_name,
@@ -143,6 +146,7 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
       }
 
       const formDataToSend = new FormData();
+        formDataToSend.append('id', formData.id)
         formDataToSend.append('first_name', formData.firstName);
         formDataToSend.append('last_name', formData.lastName);
         formDataToSend.append('middle_name', formData.middle_name);
@@ -158,13 +162,14 @@ const EditworkerForm: React.FC<EditworkerFormProps> = ({ workerId, onClose }) =>
         formDataToSend.append('status', formData.status);
         formDataToSend.append('field', formData.field);
         formDataToSend.append('purpose', formData.purpose);
-      if (formData.image) {
+
+      if (formData.image instanceof File) {
         formDataToSend.append('image', formData.image);
       }
 
       console.log('>>>>>',formDataToSend)
 
-      const response = await axios.put(`/api/workers/${workerId}`, formDataToSend, {
+      const response = await axios.put(`/api/workers/submit-all`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

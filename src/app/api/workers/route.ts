@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/config/database';
-import { uploadImage } from '@/lib/supabase';
 
-// ดึงข้อมูลคนงานทั้งหมด
+// ดึงข้อมูลคนงานทั้งหมด GET and search
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -64,64 +63,3 @@ export async function GET(req: Request) {
   }
 }
 
-// เพิ่มคนงานใหม่
-export async function POST(req: Request) {
-  try {
-    const data = await req.formData();
-
-    const idResult = await pool.query(`
-      SELECT COALESCE(
-        MAX(CAST(NULLIF(REGEXP_REPLACE(id, '\\D', '', 'g'), '') AS INTEGER)),
-        0
-      ) as max_id 
-      FROM workers
-    `);
-    const lastId = idResult.rows[0].max_id;
-    const newId = `W${String(lastId + 1).padStart(4, '0')}`;
-
-    const imageFile = data.get('image') as File | null;
-    let image_url = null;
-
-    if (imageFile) {
-      image_url = await uploadImage(imageFile);
-    }
-
-    const values = [
-      newId,
-      data.get('first_name'),
-      data.get('middle_name'),
-      data.get('last_name'),
-      data.get('birth_date'),
-      data.get('age'),
-      data.get('address'),
-      data.get('phone_number'),
-      data.get('purpose'),
-      data.get('gender'),
-      data.get('position'),
-      data.get('team_count') || 0,
-      data.get('participation_count') || 0,
-      data.get('rating') || 5,
-      image_url,
-      data.get('status'),  // ✨ เพิ่ม status
-      data.get('field'),   // ✨ เพิ่ม field
-    ];
-
-    const result = await pool.query(
-      `INSERT INTO workers (
-        id, first_name, middle_name, last_name, birth_date, 
-        age, address, phone_number, purpose, gender, 
-        position, team_count, participation_count, rating, image_url,
-        status, field
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
-                $11, $12, $13, $14, $15, $16, $17)
-      RETURNING *`,
-      values
-    );
-
-    return NextResponse.json(result.rows[0], { status: 201 });
-
-  } catch (error) {
-    console.error('Error creating worker:', error);
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการเพิ่มข้อมูลคนงาน' }, { status: 500 });
-  }
-}

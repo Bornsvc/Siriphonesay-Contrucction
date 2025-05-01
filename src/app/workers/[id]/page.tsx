@@ -204,7 +204,7 @@ export default function WorkerDetails() { // Capitalize component name
               <div className="flex items-center space-x-4">
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
                   <span className="text-white text-2xl font-semibold">
-                    {workers.first_name.charAt(0)}
+                    {(workers.first_name).charAt(0)}
                   </span>
                 </div>
                 <div>
@@ -247,7 +247,7 @@ export default function WorkerDetails() { // Capitalize component name
                 {workers.image_url ? (
                   <div className="relative h-[300px] w-full">
                     <Image 
-                      src={workers.image_url || '/worker-placeholder.png'}
+                      src={workers?.image_url || './../../../icons/LOGO.png'}
                       alt='Worker Photo'
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
