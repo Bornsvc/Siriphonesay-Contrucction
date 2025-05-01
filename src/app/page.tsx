@@ -14,7 +14,7 @@ import Pagination from './components/Pagination';
 import SidebarItem from './components/SidebarItem';
 
 //Icon and Image
-import LOGO from '@/icons/ChatGPT Image Apr 20, 2025, 12_12_55 PM.png'
+import LOGO from '@/icons/LOGO.png'
 import Image from 'next/image';
 import PtientIcon from '@/icons/patient.png'
 import AddPtientIcon from '@/icons/add.png'
