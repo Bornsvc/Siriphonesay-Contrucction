@@ -15,22 +15,21 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
   });
-  // Helper function to extract the publicId
   function extractPublicId(url: string): string {
     const parts = url.split('/');
-  
+    // Helper function to extract the publicId
     // Assuming your URL format is like:
     // https://res.cloudinary.com/demo/image/upload/v1710000000/workers/W0003/column1/filename.jpg
     // Extract the part after `workers/`, which is `W0003/column1/filename`
-    const workerId = parts[parts.length - 3];  // W0003
-    const column = parts[parts.length - 2];   // column1
-    const fileNameWithExtension = parts.pop(); // filename.jpg
     
-    // Remove file extension
-    const fileName = fileNameWithExtension?.split('.')[0]; // filename
+    const workerId = parts[parts.length - 3];
+    const column = parts[parts.length - 2];
+    const fileNameWithExtension = parts.pop(); // filename.jpg
+    const fileName = fileNameWithExtension?.split('.')[0];
   
-    return `workers/${workerId}/${column}/${fileName}`; // workers/W0003/column1/filename
+    return `workers/${workerId}/${column}/${fileName}`;
   }
+  
   
   
   export async function POST(req: NextRequest) {
@@ -74,9 +73,6 @@ cloudinary.config({
     return NextResponse.json({ urls: uploadedUrls });
   }
   
-  
-  
-
   export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const workerId = url.pathname.split('/')[4]; // Extract the workerId (e.g., W0003)
@@ -111,24 +107,18 @@ cloudinary.config({
     }
   }
   
-
-
-  
-
   export async function DELETE(req: NextRequest) {
     try {
       const body = await req.json();
       const { url } = body;
   
-      if (!url) {
-        return NextResponse.json({ error: 'URL is required for deletion' }, { status: 400 });
+      if (!url || typeof url !== 'string') {
+        return NextResponse.json({ error: 'A valid image URL string is required' }, { status: 400 });
       }
   
-      // Extract the publicId from the URL
-      const publicId = extractPublicId(url);  
+      const publicId = extractPublicId(url);
       console.log("Deleting publicId:", publicId);
   
-      // Perform the deletion on Cloudinary
       const result = await cloudinary.uploader.destroy(publicId);
       console.log("Cloudinary result:", result);
   
@@ -142,4 +132,5 @@ cloudinary.config({
       return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
     }
   }
+  
   

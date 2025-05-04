@@ -21,6 +21,30 @@ async function uploadImage(file: File): Promise<string> {
     return result.secure_url;
   }
 
+  // const listAssetsInFolder = async (folder: string) => {
+  //   const result = await cloudinary.api.resources({
+  //     type: 'upload',
+  //     prefix: folder, // This specifies the folder
+  //     max_results: 500, // Maximum number of results (increase if needed)
+  //   });
+  //   return result.resources;
+  // };
+
+  // const deleteAssetsInFolder = async (folder: string) => {
+  //   const assets = await listAssetsInFolder(folder);
+  
+  //   for (const asset of assets) {
+  //     const public_id = asset.public_id;
+  //     const result = await cloudinary.uploader.destroy(public_id);
+  
+  //     if (result.result !== 'ok') {
+  //       console.log(`Failed to delete image with public_id: ${public_id}`);
+  //     } else {
+  //       console.log(`Deleted image with public_id: ${public_id}`);
+  //     }
+  //   }
+  // };
+
 export async function POST(req: NextRequest) {
     
   try {
@@ -186,5 +210,29 @@ export async function PUT(req: Request) {
     } catch (error) {
       console.error("Error updating worker:", error);
       return NextResponse.json({ error: "เกิดข้อผิดพลาดในการอัพเดตข้อมูลคนงาน" }, { status: 500 });
+    }
+  }
+
+  export async function DELETE(req: Request) {
+    try {
+      const body = await req.json();
+      const id = body.id;
+      const folder = `workers/${id}`;
+  
+      if (!id) {
+        return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+      }
+      
+      await cloudinary.api.delete_resources_by_prefix(folder);
+
+      await cloudinary.api.delete_folder(folder);
+  
+      return NextResponse.json({ message: `Folder "${folder}" deleted successfully` });
+    } catch (error) {
+      console.log(error);
+      if (error instanceof Error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Unknown server error" }, { status: 500 });
     }
   }

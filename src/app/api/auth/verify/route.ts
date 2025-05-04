@@ -15,6 +15,7 @@ export async function GET(request: Request) {
 
     const token = authHeader.split(" ")[1];
     const decodedToken = jwt.verify(token, JWTSECRET) as { role: string; id: string };
+    console.log('Token is valid:', decodedToken);
 
     return NextResponse.json({
       authenticated: true,
@@ -22,7 +23,15 @@ export async function GET(request: Request) {
       userId: decodedToken.id
     });
   } catch (error) {
-    console.log(error);
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    if (error instanceof jwt.TokenExpiredError) {
+      // Token has expired
+      console.error('Token has expired');
+      // Handle token expiration, e.g., redirect to login or refresh token
+    } else if(error instanceof Error){
+      // Other errors, e.g., invalid signature
+      console.error('Token verification error:', error.message);
+    }
+
+    return NextResponse.json({ error: "Token verification error" }, { status: 401 });
   }
 }

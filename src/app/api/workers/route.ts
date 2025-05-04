@@ -19,18 +19,16 @@ export async function GET(req: Request) {
 
     if (search) {
       countQuery += `
-        WHERE position ILIKE $1
-        OR first_name ILIKE $1
-        OR last_name ILIKE $1
-        OR CAST(phone_number AS TEXT) ILIKE $1
-        OR CAST(participation_count AS TEXT) ILIKE $1`;
-    
+          WHERE full_name ILIKE $1
+          OR position ILIKE $1
+          OR CAST(phone_number AS TEXT) ILIKE $1
+          OR CAST(participation_count AS TEXT) ILIKE $1`;
+
       dataQuery += `
-        WHERE position ILIKE $1
-        OR first_name ILIKE $1
-        OR last_name ILIKE $1
-        OR CAST(phone_number AS TEXT) ILIKE $1
-        OR CAST(participation_count AS TEXT) ILIKE $1`;
+          WHERE full_name ILIKE $1
+          OR position ILIKE $1
+          OR CAST(phone_number AS TEXT) ILIKE $1
+          OR CAST(participation_count AS TEXT) ILIKE $1`;
     
       values.push(searchQuery);
     }

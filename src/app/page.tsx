@@ -16,7 +16,6 @@ import SidebarItem from './components/SidebarItem';
 //Icon and Image
 import LOGO from '@/icons/LOGO.png'
 import Image from 'next/image';
-import PtientIcon from '@/icons/patient.png'
 import AddPtientIcon from '@/icons/add.png'
 import Clicklist from '@/icons/check-list.png'
 import LogOutIcon from '@/icons/logout.png'
@@ -58,6 +57,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // const split = searchQuery.split(' ')
+  // useEffect(() => {
+  //   console.log(searchQuery)
+  // }, [searchQuery])
 
   const [allWorker, setAllWorker] = useState<Workers[]>([])
   useEffect(() => {
@@ -231,12 +235,6 @@ export default function Home() {
 
               <div className={`${isMobileMenuOpen ? 'flex' : 'hidden'} md:flex flex-col h-[calc(100%-60px)] md:h-full`}>
                 <div className="flex flex-col h-full">
-                  <SidebarItem
-                    icon={PtientIcon}
-                    label="ຄົນງານ"
-                    onClick={() => handleItemClick("ຄົນງານ")}
-                    isActive={activeItem === "ຄົນງານ"}
-                  />
                   <SidebarItem
                     icon={Clicklist}
                     label="ສະຖານະ"

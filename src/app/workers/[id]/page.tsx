@@ -37,18 +37,17 @@ export default function WorkerDetails() { // Capitalize component name
   const [error, setError] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-
+  const [public_id, setPublic_id] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
     const fetchworker = async () => {
       try {
-        if (params?.id) {  
-          // console.log(">>>",params?.id)
+        if (params?.id) {
           const response = await axios.get(`/api/workers/${params.id}`);
-          console.log(response.data)
+          console.log(response.data);
           setWorkers(response.data);
-          // console.log(response.data)
+          setPublic_id(response.data.id); // ← ถูกต้องแล้ว
         } else {
           setError('Invalid worker ID');
         }
@@ -60,9 +59,14 @@ export default function WorkerDetails() { // Capitalize component name
       }
     };
   
-    fetchworker();
-  }, [params?.id]); 
+    fetchworker(); // อย่า log public_id ทันทีตรงนี้ เพราะมันยังไม่ถูกตั้งค่า
+  }, [params?.id]); // ✅ ถูกต้อง
   
+  useEffect(() => {
+    if (public_id) {
+      console.log("public_id:", public_id);
+    }
+  }, [public_id]);
 
   if (loading) {
     return (
@@ -109,6 +113,13 @@ export default function WorkerDetails() { // Capitalize component name
           setToastMassage(false);
           throw new Error('Can not delete worker');
         }
+        const deleteimg = await axios.delete(`/api/workers/submit-all/`,  {
+          data: {id: public_id},
+        })
+        console.log("successfully", deleteimg)
+      } else {
+        setToastMassage(false);
+        throw new Error('Can not delete worker');
       }
     } catch (error) {
       console.error('Delete fail:', error);
